@@ -4,7 +4,7 @@ import Foundation
 /// turned into "-">/<session id>.jsonl. One slug for the chat view and the project menu.
 enum ClaudeProjects {
     static func dir(for cwd: String) -> String {
-        NSHomeDirectory() + "/.claude/projects/" + String(cwd.map { $0.isLetter || $0.isNumber ? $0 : "-" })
+        Instance.claudeDir + "/projects/" + String(cwd.map { $0.isLetter || $0.isNumber ? $0 : "-" })
     }
 }
 

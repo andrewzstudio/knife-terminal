@@ -246,6 +246,8 @@ final class TabModel: NSObject, ObservableObject, Identifiable {
         env["TERM_PROGRAM_VERSION"] = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         env["TERMINFO"] = nil
         if env["LANG"] == nil { env["LANG"] = "en_US.UTF-8" }
+        env["KNIFE_SOCK"] = Instance.socketPath        // hooks and knife-job.sh answer this app
+        if let dir = Instance.claudeConfigDir { env["CLAUDE_CONFIG_DIR"] = dir }  // `claude` here is this app's account
         return env
     }
 

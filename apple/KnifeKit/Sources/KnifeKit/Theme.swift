@@ -48,6 +48,12 @@ public struct TermTheme: Sendable {
         self.cursor = cursor; self.cursorText = cursorText
         self.accent = accent; self.attention = attention; self.ansi = ansi
     }
+
+    /// Same palette, another background and accent (a second Knife tints itself to stand apart).
+    public func tinted(background: RGB, accent: RGB) -> TermTheme {
+        TermTheme(background: background, foreground: foreground, cursor: cursor, cursorText: cursorText,
+                  accent: accent, attention: attention, ansi: ansi)
+    }
 }
 
 // Ghostty-flavored accents: periwinkle highlight on the stock dark background.

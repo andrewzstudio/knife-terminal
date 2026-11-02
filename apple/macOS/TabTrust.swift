@@ -5,7 +5,7 @@ import Foundation
 // starts without the prompt too.
 
 extension TrustKeeper {
-    static let shared = TrustKeeper(claudeJSON: NSHomeDirectory() + "/.claude.json",
+    static let shared = TrustKeeper(claudeJSON: Instance.claudeJSON,
                                     configPath: NSHomeDirectory() + "/.knife/config.json",
                                     knownCheckouts: { Projects.list().map(\.path) })
 }

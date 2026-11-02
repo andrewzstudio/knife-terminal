@@ -17,6 +17,13 @@ settings:
     # the KnifeCloudContainer Info.plist key). Override with your own team's
     # container when signing outside CW&T — it must match the entitlements.
     KNIFE_CLOUD_CONTAINER: iCloud.com.cwandt.knifeterminal
+    # A second Knife for another Claude Code account (`make install-mac-2`, see the Makefile). Empty = the
+    # main app. Read at runtime from Info.plist by macOS/Instance.swift.
+    KNIFE_APP_NAME: Knife Terminal
+    KNIFE_ICON: icon
+    KNIFE_INSTANCE: ""
+    KNIFE_CLAUDE_CONFIG_DIR: ""
+    KNIFE_TINT: ""
 
 packages:
   SwiftTerm:
@@ -49,9 +56,12 @@ targets:
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        CFBundleName: Knife Terminal
-        CFBundleDisplayName: Knife Terminal
-        CFBundleIconFile: icon
+        CFBundleName: $(KNIFE_APP_NAME)
+        CFBundleDisplayName: $(KNIFE_APP_NAME)
+        CFBundleIconFile: $(KNIFE_ICON)
+        KnifeInstance: $(KNIFE_INSTANCE)
+        KnifeClaudeConfigDir: $(KNIFE_CLAUDE_CONFIG_DIR)
+        KnifeTint: $(KNIFE_TINT)
         LSMinimumSystemVersion: "14.0"
         NSPrincipalClass: NSApplication
         ATSApplicationFontsPath: "."

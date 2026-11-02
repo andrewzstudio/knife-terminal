@@ -105,14 +105,18 @@ final class UnixSocketServer {
     }
 }
 
-// ─── Claude Code alert hooks: install into ~/.claude/settings.json ───
+// ─── Claude Code alert hooks: install into the account's settings.json (~/.claude, or Knife 2's config dir) ───
 
 enum HooksInstaller {
-    static let hookCmd = "[ -n \"$KNIFE_TAB\" ] && { printf '%s ' \"$KNIFE_TAB\"; cat; } | nc -U -w 1 \"$HOME/.knife-terminal.sock\" >/dev/null 2>&1; exit 0"
+    /// KNIFE_SOCK (set by the app that opened the tab) picks which Knife hears the hook, so one account's
+    /// settings serve both apps; without it (a tab from an older Knife) it's the main app's socket.
+    static let hookCmd = "[ -n \"$KNIFE_TAB\" ] && { printf '%s ' \"$KNIFE_TAB\"; cat; } | nc -U -w 1 \"${KNIFE_SOCK:-$HOME/.knife-terminal.sock}\" >/dev/null 2>&1; exit 0"
+    /// What installs before KNIFE_SOCK wrote; `upgrade()` rewrites it to `hookCmd`.
+    static let legacyHookCmd = "[ -n \"$KNIFE_TAB\" ] && { printf '%s ' \"$KNIFE_TAB\"; cat; } | nc -U -w 1 \"$HOME/.knife-terminal.sock\" >/dev/null 2>&1; exit 0"
     static let events = ["Stop", "Notification", "UserPromptSubmit", "PreToolUse", "PostToolUse", "SubagentStart", "SubagentStop", "TaskCompleted", "SessionStart", "SessionEnd", "StopFailure"]
     // Codex CLI reads the same hook format from ~/.codex/hooks.json (no Notification/TaskCompleted events)
     static let codexEvents = ["Stop", "UserPromptSubmit", "PreToolUse", "PostToolUse", "SubagentStart", "SubagentStop", "SessionEnd"]
-    static var settingsPath: String { (NSHomeDirectory() as NSString).appendingPathComponent(".claude/settings.json") }
+    static var settingsPath: String { Instance.claudeDir + "/settings.json" }
     static var codexPath: String { (NSHomeDirectory() as NSString).appendingPathComponent(".codex/hooks.json") }
 
     static func installed() -> Bool {
@@ -130,12 +134,40 @@ enum HooksInstaller {
         }
     }
 
-    /// Hooks from an older Knife lack newer events (StopFailure): add them without asking — consent was given once.
+    /// Hooks from an older Knife lack newer events (StopFailure) or KNIFE_SOCK routing: bring them up to date
+    /// without asking — consent was given once.
     @MainActor
     static func upgrade() {
-        guard let s = try? String(contentsOfFile: settingsPath, encoding: .utf8), s.contains("knife-terminal.sock"),
-              !installed(at: settingsPath, events: events) else { return }
-        _ = write(to: settingsPath, events: events)
+        guard let s = try? String(contentsOfFile: settingsPath, encoding: .utf8), s.contains("knife-terminal.sock") else { return }
+        if !installed(at: settingsPath, events: events) || hasLegacy(at: settingsPath) {
+            _ = write(to: settingsPath, events: events)
+        }
+    }
+
+    private static func hasLegacy(at path: String) -> Bool {
+        guard let data = FileManager.default.contents(atPath: path),
+              let cfg = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let hooks = cfg["hooks"] as? [String: Any] else { return false }
+        return migrated(hooks).changed
+    }
+
+    /// `hooks` with every legacy Knife command swapped for `hookCmd`; nothing else is touched.
+    static func migrated(_ hooks: [String: Any]) -> (hooks: [String: Any], changed: Bool) {
+        var changed = false, out = hooks
+        for (ev, value) in hooks {
+            guard let groups = value as? [[String: Any]] else { continue }
+            out[ev] = groups.map { group -> [String: Any] in
+                guard let list = group["hooks"] as? [[String: Any]] else { return group }
+                var g = group
+                g["hooks"] = list.map { h -> [String: Any] in
+                    guard h["command"] as? String == legacyHookCmd else { return h }
+                    changed = true
+                    var h = h; h["command"] = hookCmd; return h
+                }
+                return g
+            }
+        }
+        return (out, changed)
     }
 
     @MainActor
@@ -143,7 +175,7 @@ enum HooksInstaller {
         if installed() { return true }
         let alert = NSAlert()
         alert.messageText = "Add Claude Code + Codex hooks for attention alerts?"
-        alert.informativeText = "Adds hooks (\(events.joined(separator: ", "))) to \(settingsPath) and \(codexPath). Each hook pings Knife (via ~/.knife-terminal.sock) so the tab shows a thinking animation while the agent works and glows with a chime when it's waiting for you. Nothing else in the files is changed."
+        alert.informativeText = "Adds hooks (\(events.joined(separator: ", "))) to \(settingsPath) and \(codexPath). Each hook pings the Knife that opened the tab (via its socket, ~/.knife-terminal.sock for the main app) so the tab shows a thinking animation while the agent works and glows with a chime when it's waiting for you. Nothing else in the files is changed."
         alert.addButton(withTitle: "Install")
         alert.addButton(withTitle: "Cancel")
         guard alert.runModal() == .alertFirstButtonReturn else { return false }
@@ -155,7 +187,7 @@ enum HooksInstaller {
         var cfg: [String: Any] = [:]
         if let data = FileManager.default.contents(atPath: settingsPath),
            let j = try? JSONSerialization.jsonObject(with: data) as? [String: Any] { cfg = j }
-        var hooks = cfg["hooks"] as? [String: Any] ?? [:]
+        var hooks = migrated(cfg["hooks"] as? [String: Any] ?? [:]).hooks
         for ev in events {
             var arr = hooks[ev] as? [Any] ?? []
             let d = (try? JSONSerialization.data(withJSONObject: arr)).flatMap { String(data: $0, encoding: .utf8) } ?? ""
@@ -167,7 +199,7 @@ enum HooksInstaller {
         cfg["hooks"] = hooks
         do {
             try FileManager.default.createDirectory(atPath: (settingsPath as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
-            let out = try JSONSerialization.data(withJSONObject: cfg, options: [.prettyPrinted, .sortedKeys])
+            let out = try JSONSerialization.data(withJSONObject: cfg, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
             try (String(data: out, encoding: .utf8)! + "\n").write(toFile: settingsPath, atomically: true, encoding: .utf8)
             return true
         } catch {
@@ -385,11 +417,11 @@ enum Projects {
     static func list(extraRoots: [String]? = nil) -> [Project] {
         let home = NSHomeDirectory()
         let fm = FileManager.default
-        let projDir = (home as NSString).appendingPathComponent(".claude/projects")
+        let projDir = Instance.claudeDir + "/projects"
         let touched = UserDefaults.standard.dictionary(forKey: touchKey) as? [String: Double] ?? [:]
 
         var paths = Set<String>()
-        if let data = fm.contents(atPath: (home as NSString).appendingPathComponent(".claude.json")),
+        if let data = fm.contents(atPath: Instance.claudeJSON),
            let cfg = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let projects = cfg["projects"] as? [String: Any] {
             paths.formUnion(projects.keys)
@@ -445,10 +477,9 @@ enum ContextFiles {
     }
 
     static func global() -> [ContextFile] {
-        let home = NSHomeDirectory()
         return ["/Library/Application Support/ClaudeCode/CLAUDE.md",
-                (home as NSString).appendingPathComponent(".claude/CLAUDE.md"),
-                (home as NSString).appendingPathComponent(".claude/CLAUDE.local.md")].compactMap(stat)
+                Instance.claudeDir + "/CLAUDE.md",
+                Instance.claudeDir + "/CLAUDE.local.md"].compactMap(stat)
     }
 
     static func session(cwd: String?) -> (cwd: String?, files: [ContextFile]) {
@@ -463,7 +494,7 @@ enum ContextFiles {
             if parent == dir { break }
             dir = parent
         }
-        let mem = (NSHomeDirectory() as NSString).appendingPathComponent(".claude/projects/\(Projects.encode(cwd))/memory/MEMORY.md")
+        let mem = Instance.claudeDir + "/projects/\(Projects.encode(cwd))/memory/MEMORY.md"
         if let f = stat(mem) { files.append(f) }
         return (cwd, files)
     }

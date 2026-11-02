@@ -1315,7 +1315,7 @@ struct FooterBar: View {
                 }
                 btn("set default", help: "make Knife the default terminal") { DefaultTerminal.register() }
                 Spacer(minLength: 8)
-                Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
+                Text("\(Instance.label)v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
                     .font(ui(9)).foregroundStyle(.tertiary).fixedSize()
             }
             .padding(.horizontal, 10).padding(.vertical, 5)

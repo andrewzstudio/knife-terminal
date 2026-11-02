@@ -15,7 +15,7 @@ set -u
 KNIFE=$HOME/.knife
 MANIFEST=${KNIFE_MANIFEST:-$KNIFE/manifest.json}   # overrides: self-check against a scratch repo
 CLONES=${KNIFE_CLONES:-$KNIFE/projects}
-SOCK=$HOME/.knife-terminal.sock
+SOCK=${KNIFE_SOCK:-$HOME/.knife-terminal.sock}   # the Knife whose tab runs this job
 mkdir -p "$KNIFE/jobs" "$KNIFE/router" "$CLONES"
 
 say()   { printf '\n\033[1m%s\033[0m\n' "$*"; }

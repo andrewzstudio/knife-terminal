@@ -46,7 +46,7 @@ final class AppModel: ObservableObject {
     // ─── Lifecycle ───
 
     func start() {
-        socket = UnixSocketServer(path: (NSHomeDirectory() as NSString).appendingPathComponent(".knife-terminal.sock")) { [weak self] msg in
+        socket = UnixSocketServer(path: Instance.socketPath) { [weak self] msg in
             DispatchQueue.main.sync { self?.handleSocketMessage(msg) }   // sync: the reply goes back on the same connection
         }
         socket?.start()
@@ -66,7 +66,9 @@ final class AppModel: ObservableObject {
         }
         // CKContainer(identifier:) traps without the iCloud entitlement, which
         // ad-hoc/local builds outside the CW&T team can't be provisioned for.
-        if Self.hasCloudKitEntitlement {
+        // A second Knife (another Claude account) never syncs: the phone mirror and the job runner are the
+        // main app's, and two publishers would collide on tab ids.
+        if Self.hasCloudKitEntitlement && !Instance.isSecondary {
             let publisher = SyncPublisher()
             sync = publisher
             publisher.start()
@@ -450,7 +452,7 @@ final class AppModel: ObservableObject {
 
     private var sessionURL: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Knife Terminal/session.json")
+            .appendingPathComponent(Instance.supportFolder + "/session.json")
     }
     private var legacySessionURL: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -498,7 +500,8 @@ final class AppModel: ObservableObject {
 
     private func restoreSession() {
         var session: SavedSession?
-        for url in [sessionURL, legacySessionURL] {
+        // only the main app inherits the Electron session; a second Knife starts from its own
+        for url in Instance.isSecondary ? [sessionURL] : [sessionURL, legacySessionURL] {
             if let data = try? Data(contentsOf: url) {
                 // the Electron file may be {windows:[…]} or legacy {tabs:[…]}
                 if let s = try? JSONDecoder().decode(SavedSession.self, from: data), !s.windows.isEmpty { session = s; break }

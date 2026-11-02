@@ -9,6 +9,15 @@ CW&T's own terminal. Native Swift — SwiftUI + [SwiftTerm](https://github.com/m
     make install-mac      # build the macOS app and copy to /Applications
     make ios              # build the iOS app (install to your iPhone from Xcode)
     make gen              # regenerate apple/KnifeTerminal.xcodeproj from apple/project.yml
+    make install-mac-2    # a second Knife for another Claude Code account (Knife 2.app)
+
+**Knife 2** is the same app built as a second instance for another Claude Code account (`CLAUDE_CONFIG_DIR`,
+default `~/.claude-worker`; override `KNIFE2_CONFIG_DIR`, `KNIFE2_NAME`, `KNIFE2_TINT` in local.mk). It has its own
+bundle id, windows, tabs, sidebar settings and socket (`~/.knife-2.sock`); its tabs export `CLAUDE_CONFIG_DIR`
+and `KNIFE_SOCK`, so `claude` there is that account and its hooks answer Knife 2. The sidebar, folder trust and
+alert hooks use that account's files. The window and Dock dot are tinted (`KNIFE2_TINT`, green) so the two
+can't be confused. No iCloud (the phone mirror and jobs stay with the main app) and no Sparkle updates.
+Saved prompts and the clipboard pile (`~/.knife/`) are shared. `XCODEBUILD_FLAGS_2` in local.mk signs it.
 
 Needs Xcode signed into the CW&T Studio developer account (team `L6DVQR8JB9`) — signing is automatic.
 

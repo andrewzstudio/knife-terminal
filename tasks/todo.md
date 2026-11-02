@@ -223,3 +223,21 @@ Replaces the status groups (needs input / working / ready / active / dormant) in
 - [x] Eddie: "within the side bar i still want to see active dormant and have the repos nested under those." Top level is active / dormant again (the SidebarGroup rule from before f77c5cc: needs input / working / ready = active whatever the timestamp, else touched in 24 h = active, else dormant; `TabTier`). Repo groups nest one indent (12 pt) in, under active ranked by tier then recency, under dormant by recency; a repo can be under both. Both levels fold (`tier:active` / `active:<repo key>` in `knife.foldedTabGroups`; yesterday's bare repo keys are orphaned) and show the needs-input / working summary when folded. Freeze, ⌘1–9, unfold-on-activate and drag cover both levels. All dormant → no tier header and no indent, the old plain-list rule. Tests 82/82
 - [ ] Hands-on QA after Eddie relaunches (not driven by hand): click rows while statuses change; active/dormant headers + nesting indent; fold each level; drag within a group and onto another group's row; fold/unfold, folded header lights up on needs input; cd into another repo in a plain shell; ⌘1–9 vs what's drawn; ⌘1–9 into a folded group opens it; a renamed tab's label
 - [x] Flag for review (eab143e, merged 3f85dbf): right-click project → flag for review / done reviewing; review section above ★, newest first; folders kept. All 7 suites green on main; installed. Hands-on QA open
+
+## Knife 2: a second instance for Claude account 2 (2026-11-02)
+
+Same code, second app (`make install-mac-2` → /Applications/Knife 2.app), driven by Info.plist keys.
+- [x] `Instance` (macOS/Instance.swift): KnifeInstance / KnifeClaudeConfigDir / KnifeTint → socket, session dir, claude paths, tint
+- [x] Shells get CLAUDE_CONFIG_DIR + KNIFE_SOCK; hook command reads KNIFE_SOCK (falls back to ~/.knife-terminal.sock); upgrade rewrites the old command
+- [x] Claude paths: settings.json, projects/, .claude.json, CLAUDE.md, memory, trust → the instance's account
+- [x] Session file per instance; no Electron import for the second one
+- [x] Knife 2: no Sparkle, no iCloud (phone mirror + jobs stay on Knife 1)
+- [x] Green tint: background + accent from one hex; green dot icon; "knife 2" in the footer
+- [x] Build + install Knife 2, launch it next to Knife 1, check sidebar = account 2, alerts land in the right app
+
+**Review**: Built and installed /Applications/Knife 2.app (com.zelig.knifeterminal.2, no iCloud entitlement) and
+launched it beside Knife 1. Its shell reports CLAUDE_CONFIG_DIR=~/.claude-worker, KNIFE_SOCK=~/.knife-2.sock; the
+real PreToolUse/SessionEnd hook command from ~/.claude-worker/settings.json flipped Knife 2's tab to working/idle.
+First launch migrated that file's 11 Knife hooks to the KNIFE_SOCK form; other hooks and keys unchanged;
+~/.claude/settings.json untouched. Main app (`make mac`) still builds as com.zelig.knifeterminal with iCloud and
+empty instance keys. Knife 1 was not reinstalled.

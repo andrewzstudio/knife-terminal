@@ -5,7 +5,7 @@ import Sparkle
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
-    let updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+    let updaterController = SPUStandardUpdaterController(startingUpdater: !Instance.isSecondary, updaterDelegate: nil, userDriverDelegate: nil)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildMenu()
@@ -53,7 +53,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "About Knife Terminal", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
-        appMenu.addItem(withTitle: "Check for Updates…", action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "").target = updaterController
+        if !Instance.isSecondary { // the second app is built from source (make install-mac-2), not from the appcast
+            appMenu.addItem(withTitle: "Check for Updates…", action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "").target = updaterController
+        }
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Make Default Terminal…", action: #selector(setDefault), keyEquivalent: "").target = self
         appMenu.addItem(withTitle: "Install Claude Code Alert Hooks…", action: #selector(installHooks), keyEquivalent: "").target = self

@@ -35,7 +35,7 @@ final class ThemeManager: ObservableObject {
         }
     }
 
-    var current: TermTheme { isDark ? .dark : .light }
+    var current: TermTheme { Instance.theme(isDark ? .dark : .light, dark: isDark) }
 
     func cycle() {
         mode = switch mode { case .auto: .light; case .light: .dark; case .dark: .auto }
