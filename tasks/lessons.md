@@ -87,3 +87,12 @@ after relaunching: "i much prefer the way that it looked before." Reverted (09a3
 own commit and is shown before it ships: a screenshot or mock first, or behind a setting that
 defaults to the current look. "Yes to the list" covers behavior; it doesn't sign off on a new
 skin for the whole app.
+
+## A second bundle id starts with empty preferences (2026-11-02, Knife 2)
+
+Knife 2 shipped with a new bundle id, so it read none of Knife 1's `defaults` — including `chime = none`.
+It chimed on every wait; Eddie: "the notifs are annoying. i dont need sounds".
+
+**Rule:** when standing up another instance (new bundle id), diff the main app's domain first
+(`defaults export com.zelig.knifeterminal -`) and carry over behavioral prefs — `chime` above all. Eddie
+runs Knife silent: never introduce a sound that defaults on.
