@@ -80,8 +80,11 @@ enum Manifest {
         guard let m = (try? FileManager.default.attributesOfItem(atPath: path + "/.git/config"))?[.modificationDate] as? Date
         else { return nil } // not a repo (or a worktree, whose .git is a file)
         if let c = remoteCache[path], c.mtime == m { return c.remote }
-        let r = run(["git", "-C", path, "remote", "get-url", "origin"])?.trimmingCharacters(in: .whitespacesAndNewlines)
-        remoteCache[path] = (m, (r?.isEmpty ?? true) ? nil : r)
+        // Parse the config, never shell out: this runs inside SwiftUI view bodies (every project
+        // row's context menu), where Process.waitUntilExit spins the run loop and re-enters the
+        // SwiftUI update cycle — a segfault (crash reports 2026-11-03).
+        let text = (try? String(contentsOfFile: path + "/.git/config", encoding: .utf8)) ?? ""
+        remoteCache[path] = (m, Repos.originURL(inConfig: text))
         return remoteCache[path]?.remote
     }
 

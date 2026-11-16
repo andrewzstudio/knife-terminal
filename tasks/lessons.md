@@ -96,3 +96,16 @@ It chimed on every wait; Eddie: "the notifs are annoying. i dont need sounds".
 **Rule:** when standing up another instance (new bundle id), diff the main app's domain first
 (`defaults export com.zelig.knifeterminal -`) and carry over behavioral prefs — `chime` above all. Eddie
 runs Knife silent: never introduce a sound that defaults on.
+
+## Never block on a subprocess inside a view body (2026-11-03, "knife keeps quitting")
+
+Right-clicking (or just re-rendering) a sidebar project row segfaulted the app: the row's
+`.contextMenu` builder called `Manifest.remote(of:)`, which on a cache miss ran
+`git remote get-url` through a login shell and `waitUntilExit()`ed on the main thread.
+`waitUntilExit` spins the run loop, SwiftUI's update-cycle observer fires re-entrantly mid-body,
+and it jumps through a null pointer (EXC_BAD_ACCESS at 0x0, `UC::DriverCore::continueProcessing`).
+
+**Anything reachable from `body` or a `.contextMenu` builder must be pure and fast**: no
+`Process`, no `waitUntilExit`, no nested run loops. Read files directly (git config is plain
+text; `Repos.originURL(inConfig:)` parses it) or compute off-main and publish into state.
+A `.contextMenu` builder runs on *every* render of the row, not only on right-click.

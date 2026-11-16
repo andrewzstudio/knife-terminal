@@ -121,7 +121,7 @@ struct RepoKey: Equatable {
 
 enum Repos {
     /// The repo `path` is in, by walking up to the nearest `.git`. Manifest.remote(of:) isn't
-    /// reused: it only looks at `path` itself, skips worktrees, and runs git through a login shell.
+    /// reused: it only looks at `path` itself and skips worktrees.
     static func key(for path: String) -> RepoKey? {
         guard let (root, config) = locate(path) else { return nil }
         if let url = originURL(inConfig: cachedConfig(config)), let key = normalize(remote: url) {
