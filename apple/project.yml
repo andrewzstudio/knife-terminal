@@ -24,7 +24,10 @@ settings:
 packages:
   SwiftTerm:
     url: https://github.com/migueldeicaza/SwiftTerm
-    from: 1.2.0
+    # below 1.99: it makes `selection` internal and drops getTerminal() and the
+    # dataReceived override KnifeTermView is built on
+    minVersion: 1.2.0
+    maxVersion: 1.99.0
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
     from: 2.6.0
