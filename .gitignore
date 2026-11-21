@@ -8,3 +8,4 @@ apple/KnifeKit/.build/
 apple/KnifeKit/.swiftpm/
 apple/macOS/KnifeMacDev.entitlements
 local.mk
+build/

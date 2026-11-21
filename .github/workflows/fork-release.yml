@@ -1,15 +1,16 @@
 # Builds the Mac app on a GitHub runner and posts it as a release of this fork.
 # The build is ad-hoc signed (no Apple account on the runner): not notarized, no
 # iCloud entitlement. release.sh is still the notarized CW&T release.
-# Runs when the version in apple/project.yml changes; a version that already has
-# a release is built and smoke-tested but not published again.
+# Every push that touches the app is built, tested and smoke-tested. A release is
+# published from main, from a manual run, or from a commit whose message contains
+# [release], and only for a version in apple/project.yml that has no release yet.
 name: Fork release
 on:
   workflow_dispatch:
   push:
     branches: [main, 'claude/**']
     paths:
-      - apple/project.yml
+      - apple/**
       - .github/workflows/fork-release.yml
       - .github/fork-release-notes.md
 
@@ -38,12 +39,25 @@ jobs:
         run: |
           brew install xcodegen
           xcodegen generate
-          # the fork's own appcast: this build must not be replaced by a CW&T release
+          # its own feed, not CW&T's appcast.xml: a CW&T release must not replace this build
           xcodebuild build -project KnifeTerminal.xcodeproj -scheme KnifeMac -configuration Release \
             -derivedDataPath DerivedData -skipPackagePluginValidation \
             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= CODE_SIGN_ENTITLEMENTS= \
             ENABLE_HARDENED_RUNTIME=NO ONLY_ACTIVE_ARCH=NO \
-            KNIFE_FEED_URL="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/appcast.xml"
+            KNIFE_FEED_URL="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/appcast-eddie.xml"
+
+      - name: KnifeKit tests
+        if: success() || failure()
+        working-directory: apple/KnifeKit
+        run: swift test
+
+      - name: iOS app compiles
+        if: success() || failure()
+        working-directory: apple
+        run: |
+          xcodebuild build -project KnifeTerminal.xcodeproj -scheme KnifeiOS -configuration Debug \
+            -destination 'generic/platform=iOS' -derivedDataPath DerivedData -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Check and smoke-test
         working-directory: apple
@@ -64,6 +78,7 @@ jobs:
           path: ${{ env.ZIP }}
 
       - name: Publish
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "$TAG already released; built only"

@@ -11,8 +11,8 @@ settings:
     DEVELOPMENT_TEAM: L6DVQR8JB9
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.9"
-    MARKETING_VERSION: "1.2.31"
-    CURRENT_PROJECT_VERSION: "1.1.5"  # CFBundleVersion must increase each release — Sparkle compares it
+    MARKETING_VERSION: "1.4.33"
+    CURRENT_PROJECT_VERSION: "1.1.13"  # CFBundleVersion must increase each release — Sparkle compares it
     # CloudKit container the Mac and iOS apps sync through (read at runtime via
     # the KnifeCloudContainer Info.plist key). Override with your own team's
     # container when signing outside CW&T — it must match the entitlements.
@@ -64,6 +64,7 @@ targets:
         NSAppleEventsUsageDescription: Knife Terminal opens folders and scripts you send it.
         NSHumanReadableCopyright: CW&T
         KnifeCloudContainer: $(KNIFE_CLOUD_CONTAINER)
+        CKSharingSupported: true
         SUFeedURL: $(KNIFE_FEED_URL)
         SUPublicEDKey: IsZ2LtddRqNHFHsp6U40Gw/A6sWIJO4m5xJYr1r4qic=
         SUEnableAutomaticChecks: true
@@ -134,6 +135,7 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         UIBackgroundModes: [remote-notification]
         ITSAppUsesNonExemptEncryption: false
+        CKSharingSupported: true
     settings:
       base:
         PRODUCT_NAME: Knife
