@@ -1,4 +1,4 @@
-Eddie's build of Knife Terminal: everything in CW&T's 1.4.33, plus the sidebar work that isn't in CW&T's releases.
+Andrew's build of Knife Terminal: Eddie's fork (CW&T's 1.4.33 plus Eddie's sidebar work), plus Andrew's own changes.
 
 **From this fork**
 - **Sidebar folders**: right-click a section header → "new folder", then drag projects in. Folders nest ("new folder" from a folder's own menu), so UN › BOOK or AZS › LEVEL instead of one long list.
@@ -16,4 +16,4 @@ Eddie's build of Knife Terminal: everything in CW&T's 1.4.33, plus the sidebar w
 
 **Not notarized.** Unzip, drag to Applications, then right-click → Open the first time (or System Settings → Privacy & Security → Open Anyway). If macOS says the app is damaged, run `xattr -dr com.apple.quarantine "/Applications/Knife Terminal.app"`.
 
-This build has no iCloud entitlement, so the iPhone mirror, phone pushes and session invites are off. It does not update itself to CW&T's releases; new builds are posted here.
+This build has no iCloud entitlement, so the iPhone mirror, phone pushes and session invites are off. It does not update itself to CW&T's or Eddie's releases; new builds are posted here.

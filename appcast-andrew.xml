@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The update feed of Andrew's builds (the Fork release workflow points SUFeedURL here).
+     Empty on purpose: those builds are not signed with the Sparkle key, so they are
+     downloaded from the releases page. appcast.xml is CW&T's feed. -->
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>Knife Terminal (Andrew's build)</title>
+    <link>https://github.com/andrewzstudio/knife-terminal/releases</link>
+    <description>Updates for Andrew's build of Knife Terminal</description>
+    <language>en</language>
+  </channel>
+</rss>

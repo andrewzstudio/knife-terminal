@@ -1,15 +1,15 @@
 # Builds the Mac app on a GitHub runner and posts it as a release of this fork.
 # The build is ad-hoc signed (no Apple account on the runner): not notarized, no
 # iCloud entitlement. release.sh is still the notarized CW&T release.
-# Its update feed is appcast-eddie.xml, so a CW&T release never replaces it.
+# Its update feed is appcast-andrew.xml (empty), so no CW&T or Eddie release replaces it.
 # Every push that touches the app is built, tested and smoke-tested. A release is
-# published from main, from a manual run, or from a commit whose message contains
+# published from the andrew branch, from a manual run, or from a commit whose message contains
 # [release], and only for a version in apple/project.yml that has no release yet.
 name: Fork release
 on:
   workflow_dispatch:
   push:
-    branches: [main, 'claude/**']
+    branches: [andrew]
     paths:
       - apple/**
       - .github/workflows/fork-release.yml
@@ -32,20 +32,20 @@ jobs:
           V=$(sed -n 's/.*MARKETING_VERSION: *"\(.*\)".*/\1/p' apple/project.yml)
           [ -n "$V" ] || { echo "no MARKETING_VERSION in apple/project.yml"; exit 1; }
           echo "V=$V" >> "$GITHUB_ENV"
-          echo "TAG=v$V-eddie" >> "$GITHUB_ENV"
-          echo "ZIP=$PWD/Knife-Terminal-$V-eddie.zip" >> "$GITHUB_ENV"
+          echo "TAG=v$V-andrew" >> "$GITHUB_ENV"
+          echo "ZIP=$PWD/Knife-Terminal-$V-andrew.zip" >> "$GITHUB_ENV"
 
       - name: Build
         working-directory: apple
         run: |
           brew install xcodegen
           xcodegen generate
-          # its own feed, not CW&T's appcast.xml: a CW&T release must not replace this build
+          # its own feed (appcast-andrew.xml, kept empty): neither a CW&T nor an Eddie release can replace this build
           xcodebuild build -project KnifeTerminal.xcodeproj -scheme KnifeMac -configuration Release \
             -derivedDataPath DerivedData -skipPackagePluginValidation \
             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= CODE_SIGN_ENTITLEMENTS= \
             ENABLE_HARDENED_RUNTIME=NO ONLY_ACTIVE_ARCH=NO \
-            KNIFE_FEED_URL="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/appcast-eddie.xml"
+            KNIFE_FEED_URL="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/andrew/appcast-andrew.xml"
 
       - name: KnifeKit tests
         if: success() || failure()
@@ -75,15 +75,15 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Knife-Terminal-${{ env.V }}-eddie
+          name: Knife-Terminal-${{ env.V }}-andrew
           path: ${{ env.ZIP }}
 
       - name: Publish
-        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
+        if: github.ref == 'refs/heads/andrew' || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "$TAG already released; built only"
             exit 0
           fi
           gh release create "$TAG" "$ZIP" --target "$GITHUB_SHA" \
-            --title "Knife Terminal $V (Eddie's build)" --notes-file .github/fork-release-notes.md
+            --title "Knife Terminal $V (Andrew's build)" --notes-file .github/fork-release-notes.md
