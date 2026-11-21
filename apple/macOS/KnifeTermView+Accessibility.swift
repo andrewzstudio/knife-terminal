@@ -30,7 +30,7 @@ extension KnifeTermView {
         return (max(0, getTerminal().rows - 1), 0)
     }
     /// SwiftTerm's cell size is private; the font's metrics reproduce it (height = line height, width = "W" advance).
-    private var cellSize: CGSize {
+    private var axCellSize: CGSize { // named apart from KnifeTermView.cellSize()
         let w = ceil(font.advancement(forGlyph: font.glyph(withName: "W")).width)
         let h = ceil(font.ascender - font.descender + font.leading)
         return CGSize(width: max(1, w), height: max(1, h))
@@ -56,7 +56,7 @@ extension KnifeTermView {
     /// Screen rectangle of the cells covering `range` (one row; the first row if it spans several).
     override func accessibilityFrame(for range: NSRange) -> NSRect {
         let (row, col) = cell(of: range.location)
-        let c = cellSize
+        let c = axCellSize
         let n = max(1, min(range.length, getTerminal().cols - col))
         let local = NSRect(x: CGFloat(col) * c.width, y: bounds.height - CGFloat(row + 1) * c.height, width: CGFloat(n) * c.width, height: c.height)
         guard let w = window else { return .zero }
