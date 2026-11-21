@@ -45,7 +45,7 @@ struct ChatPane: View {
 
     /// Every mono(_:) in this view: message text follows View › Bigger/Smaller Text, scaled
     /// with the terminal's size (shadows the shared mono, which the sidebar and git panel keep).
-    private func mono(_ size: CGFloat) -> Font { Font.custom("Space Mono", size: size * theme.textScale) }
+    private func mono(_ size: CGFloat) -> Font { ui(size * theme.textScale) }
 
     var body: some View {
         Group {

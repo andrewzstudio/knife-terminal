@@ -65,7 +65,8 @@ final class KnifeWindowController: NSWindowController, NSWindowDelegate, Observa
         self.init(window: win)
         win.delegate = self
         win.backgroundColor = AppModel.shared.theme.nsColor(AppModel.shared.theme.current.background)
-        win.contentView = NSHostingView(rootView: ContentView(controller: self))
+        win.contentView = NSHostingView(rootView: ContentView(controller: self)
+            .font(.custom("Helvetica", size: NSFont.systemFontSize)))
         if bounds != nil { win.setFrame(rect, display: true) } else { win.center() }
     }
 

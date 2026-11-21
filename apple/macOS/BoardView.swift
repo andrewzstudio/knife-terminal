@@ -183,7 +183,7 @@ struct SessionCard: View {
                     case .tool:
                         HStack(spacing: 5) {
                             Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold))
-                            Text(m.text).font(Font.custom("JetBrains Mono", size: 10)).lineLimit(1)
+                            Text(m.text).font(ui(10)).lineLimit(1)
                         }
                         .foregroundStyle(.secondary)
                     }
