@@ -1,10 +1,16 @@
 #!/bin/bash
 # Install a release of Andrew's fork over the running Knife, then relaunch it.
 # Usage: scripts/install-release.sh v1.4.34-andrew
+#        scripts/install-release.sh "_claude_build/DerivedData/Build/Products/Release/Knife Terminal.app"  (a local build)
 # Quitting Knife ends any Claude session running inside it, so this detaches itself first:
 # the swap happens ~8 s later, after Knife has quit. Log: ~/.knife/backup/install.log
 set -euo pipefail
-TAG="${1:?usage: $0 <release tag, e.g. v1.4.34-andrew>}"
+TAG="${1:?usage: $0 <release tag, e.g. v1.4.34-andrew, or a locally built .app>}"
+SRC=""
+if [ -d "$TAG" ]; then # a local build: install that app instead of downloading a release
+  SRC=$(cd "$(dirname "$TAG")" && pwd)/$(basename "$TAG")
+  TAG="local-$(defaults read "$SRC/Contents/Info" CFBundleShortVersionString)-$(date +%y%m%d-%H%M)"
+fi
 REPO=andrewzstudio/knife-terminal
 GH="${GH:-$HOME/.local/bin/gh}"
 WORK="$HOME/.knife/backup/releases/$TAG"
@@ -13,8 +19,12 @@ LOG="$HOME/.knife/backup/install.log"
 
 if [ "${KNIFE_INSTALL_DETACHED:-}" != 1 ]; then
   rm -rf "$WORK" && mkdir -p "$WORK"
-  "$GH" release download "$TAG" -R "$REPO" -p '*.zip' -D "$WORK"
-  ditto -x -k "$WORK"/*.zip "$WORK/unzipped"
+  if [ -n "$SRC" ]; then
+    mkdir -p "$WORK/unzipped" && ditto "$SRC" "$WORK/unzipped/Knife Terminal.app"
+  else
+    "$GH" release download "$TAG" -R "$REPO" -p '*.zip' -D "$WORK"
+    ditto -x -k "$WORK"/*.zip "$WORK/unzipped"
+  fi
   NEW="$WORK/unzipped/Knife Terminal.app"
   codesign --verify --deep --strict "$NEW"
   echo "verified $(defaults read "$NEW/Contents/Info" CFBundleShortVersionString)"
