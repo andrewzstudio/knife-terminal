@@ -10,16 +10,22 @@ extension Notification.Name {
     static let knifeChatInsert = Notification.Name("knife.chatInsert") // object: window controller; userInfo["text"]: String
 }
 
-// Chrome type: plain Helvetica (ships with macOS) everywhere outside the terminal grid,
-// which stays monospace so columns line up.
+// Chrome type: Helvetica Now Text (system-installed); the terminal grid stays monospace.
 func ui(_ size: CGFloat, bold: Bool = false) -> Font {
-    Font.custom(bold ? "Helvetica-Bold" : "Helvetica", size: size)
+    Font.custom(bold ? "HelveticaNowText-Medium" : "HelveticaNowText-Regular", size: size)
 }
 
-// Upstream set its chat view and git panel in Space Mono; this build uses Helvetica there too.
+// Upstream's chat view and git panel are set in Space Mono.
 @MainActor
 func mono(_ size: CGFloat, bold: Bool = false) -> Font {
-    ui(size, bold: bold && AppModel.shared.theme.user.boldText)
+    let user = AppModel.shared.theme.user
+    let allowBold = bold && user.boldText
+    if let f = user.chromeFont {
+        return NSFont(name: f.regular, size: size) != nil
+            ? Font.custom(allowBold ? f.bold : f.regular, size: size)
+            : .system(size: size, weight: allowBold ? .medium : .regular)
+    }
+    return Font.custom(allowBold ? "Space Mono Bold" : "Space Mono", size: size)
 }
 
 // Secondary/tertiary labels render grey — vetoed on dark for a no-grey-on-black
@@ -1364,7 +1370,7 @@ struct FooterBar: View {
                 btn(autoClaude ? "claude on" : "claude off", on: autoClaude,
                     help: autoClaude ? "new tabs start Claude Code — ⌥⌘T or shift-click “new tab” for a plain shell"
                                      : "new tabs open a plain shell — click to start Claude Code in them") { autoClaude.toggle() }
-                btn("style: " + theme.user.id, help: "style profile — house: CW&T; plain: no emoticons, no bold, no grey-on-black, 12pt; ghostty: Ghostty colors, Helvetica everywhere") { theme.cycleUser() }
+                btn("style: " + theme.user.id, help: "style profile — house: CW&T; plain: no emoticons, no bold, no grey-on-black, 12pt; ghostty: Ghostty colors, JetBrains Mono, Helvetica Now") { theme.cycleUser() }
                 btn(hooksOn ? "alerts on" : "alerts off", on: hooksOn, help: "Claude Code hooks for working/attention alerts") {
                     _ = HooksInstaller.install(); hooksOn = HooksInstaller.installed()
                 }

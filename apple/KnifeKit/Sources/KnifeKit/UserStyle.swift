@@ -33,12 +33,12 @@ public struct UserStyle: Sendable, Equatable {
                                          termFontDelta: -1, greyReplacementHex: nil, accentHex: 0x00FF00)
     public static let house = UserStyle(id: "house", emoticons: true, boldText: true, greyOnBlack: true,
                                      termFontDelta: 0, greyReplacementHex: nil, accentHex: nil)
-    /// Ghostty's palettes with plain Helvetica for the grid (each letter sits in a W-wide cell)
-    /// and for the chrome.
+    /// Ghostty's look: its palettes, JetBrains Mono (bundled) for the grid,
+    /// Helvetica Now Text for the chrome (licensed, not bundled — system font without it).
     public static let ghostty = UserStyle(id: "ghostty", emoticons: true, boldText: true, greyOnBlack: true,
                                           termFontDelta: 0, greyReplacementHex: nil, accentHex: nil,
-                                          ghosttyPalette: true, termFont: "Helvetica",
-                                          chromeFont: ("Helvetica", "Helvetica-Bold"))
+                                          ghosttyPalette: true, termFont: "JetBrains Mono",
+                                          chromeFont: ("HelveticaNowText-Regular", "HelveticaNowText-Medium"))
     public static let all: [UserStyle] = [.plain, .house, .ghostty]
 
     public static func named(_ id: String?) -> UserStyle? {
