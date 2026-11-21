@@ -16,11 +16,13 @@ Xcode 27 is installed on this Mac (since 2026-11-21), so build and install local
 
 1. Edit the code on `andrew`. The Mac app is in `apple/macOS/` and the sidebar is mostly in `ContentView.swift`, `Support.swift` and `SidebarFolders.swift`.
 2. Bump `MARKETING_VERSION` in `apple/project.yml`, for example from `1.4.34` to `1.4.35`.
-3. Build in `apple/`: `xcodegen generate` (at `~/.local/bin/xcodegen`), then
+3. Build in `apple/`: `xcodegen generate` (`~/.local/bin/xcodegen` is a wrapper script, not a symlink: through a symlink it can't find its setting presets, prints "No \"macOS\" settings found", and the app is built without its Frameworks rpath and dies at launch), then
    `xcodebuild build -project KnifeTerminal.xcodeproj -scheme KnifeMac -configuration Release -derivedDataPath ../_claude_build/DerivedData -skipPackagePluginValidation CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= CODE_SIGN_ENTITLEMENTS= ENABLE_HARDENED_RUNTIME=NO ONLY_ACTIVE_ARCH=NO KNIFE_FEED_URL="https://raw.githubusercontent.com/andrewzstudio/knife-terminal/andrew/appcast-andrew.xml"`
 4. Install with `scripts/install-release.sh "_claude_build/DerivedData/Build/Products/Release/Knife Terminal.app"`. It backs up the current app to `~/.knife/backup/`, quits Knife, swaps the app and reopens it.
    - Quitting Knife ends the Claude session running in it, so tell Andrew before running the script.
    - Tabs and sessions restore themselves after the restart.
+   - If the new app doesn't stay open, the script puts the backup back and reopens it.
+   - Never launch a built app's binary directly to test it: it shares Knife's settings and sessions.
 5. Commit and `git push origin andrew`. Andrew doesn't need the GitHub build: leave `[release]` out of the message unless he asks for a published release. With `[release]`, `.github/workflows/fork-release.yml` builds and publishes `v<version>-andrew` (watch with `gh run watch <id> -R andrewzstudio/knife-terminal --exit-status`), and `scripts/install-release.sh v<version>-andrew` installs that instead.
 6. Batch requests into one build where you can, but don't restart a running build for a new request without asking.
 7. To roll back, quit Knife, unzip a backup from `~/.knife/backup/` into `/Applications`, and run `xattr -dr com.apple.quarantine`.

@@ -29,9 +29,10 @@ if [ "${KNIFE_INSTALL_DETACHED:-}" != 1 ]; then
   codesign --verify --deep --strict "$NEW"
   echo "verified $(defaults read "$NEW/Contents/Info" CFBundleShortVersionString)"
   OLD_V=$(defaults read "$APP/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo none)
-  ditto -c -k --keepParent "$APP" "$HOME/.knife/backup/Knife-Terminal-$OLD_V-before-$TAG.zip"
+  BACKUP="$HOME/.knife/backup/Knife-Terminal-$OLD_V-before-$TAG.zip"
+  ditto -c -k --keepParent "$APP" "$BACKUP"
   echo "backed up current $OLD_V to ~/.knife/backup/Knife-Terminal-$OLD_V-before-$TAG.zip"
-  KNIFE_INSTALL_DETACHED=1 nohup python3 -c 'import os,sys; os.setsid(); os.execv("/bin/bash", ["/bin/bash"] + sys.argv[1:])' \
+  KNIFE_INSTALL_DETACHED=1 KNIFE_INSTALL_BACKUP="$BACKUP" nohup python3 -c 'import os,sys; os.setsid(); os.execv("/bin/bash", ["/bin/bash"] + sys.argv[1:])' \
     "$0" "$TAG" >/dev/null 2>&1 &
   echo "Knife will quit in ~8 s, be replaced, and reopen."
   exit 0
@@ -47,3 +48,10 @@ if pgrep -x "Knife Terminal" >/dev/null; then echo "Knife did not quit; nothing 
 rm -rf "$APP" && ditto "$NEW" "$APP" && xattr -dr com.apple.quarantine "$APP"
 echo "installed $(defaults read "$APP/Contents/Info" CFBundleShortVersionString)"
 open "$APP"
+# A build that can't launch (a missing framework, say) dies within seconds: put the old app back.
+sleep 12
+if ! pgrep -x "Knife Terminal" >/dev/null && [ -n "${KNIFE_INSTALL_BACKUP:-}" ]; then
+  echo "the new build didn't stay open; restoring $KNIFE_INSTALL_BACKUP"
+  rm -rf "$APP" && ditto -x -k "$KNIFE_INSTALL_BACKUP" /Applications && xattr -dr com.apple.quarantine "$APP"
+  open "$APP"
+fi
