@@ -1364,7 +1364,7 @@ struct FooterBar: View {
                 btn(autoClaude ? "claude on" : "claude off", on: autoClaude,
                     help: autoClaude ? "new tabs start Claude Code — ⌥⌘T or shift-click “new tab” for a plain shell"
                                      : "new tabs open a plain shell — click to start Claude Code in them") { autoClaude.toggle() }
-                btn("style: " + theme.user.id, help: "style profile — house: CW&T; plain: no emoticons, no bold, no grey-on-black, 12pt; ghostty: Ghostty colors, JetBrains Mono, Helvetica") { theme.cycleUser() }
+                btn("style: " + theme.user.id, help: "style profile — house: CW&T; plain: no emoticons, no bold, no grey-on-black, 12pt; ghostty: Ghostty colors, Helvetica everywhere") { theme.cycleUser() }
                 btn(hooksOn ? "alerts on" : "alerts off", on: hooksOn, help: "Claude Code hooks for working/attention alerts") {
                     _ = HooksInstaller.install(); hooksOn = HooksInstaller.installed()
                 }
