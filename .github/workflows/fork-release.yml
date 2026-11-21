@@ -1,0 +1,73 @@
+# Builds the Mac app on a GitHub runner and posts it as a release of this fork.
+# The build is ad-hoc signed (no Apple account on the runner): not notarized, no
+# iCloud entitlement. release.sh is still the notarized CW&T release.
+# Runs when the version in apple/project.yml changes; a version that already has
+# a release is built and smoke-tested but not published again.
+name: Fork release
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'claude/**']
+    paths:
+      - apple/project.yml
+      - .github/workflows/fork-release.yml
+      - .github/fork-release-notes.md
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        run: |
+          V=$(sed -n 's/.*MARKETING_VERSION: *"\(.*\)".*/\1/p' apple/project.yml)
+          [ -n "$V" ] || { echo "no MARKETING_VERSION in apple/project.yml"; exit 1; }
+          echo "V=$V" >> "$GITHUB_ENV"
+          echo "TAG=v$V-eddie" >> "$GITHUB_ENV"
+          echo "ZIP=$PWD/Knife-Terminal-$V-eddie.zip" >> "$GITHUB_ENV"
+
+      - name: Build
+        working-directory: apple
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          # the fork's own appcast: this build must not be replaced by a CW&T release
+          xcodebuild build -project KnifeTerminal.xcodeproj -scheme KnifeMac -configuration Release \
+            -derivedDataPath DerivedData -skipPackagePluginValidation \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= CODE_SIGN_ENTITLEMENTS= \
+            ENABLE_HARDENED_RUNTIME=NO ONLY_ACTIVE_ARCH=NO \
+            KNIFE_FEED_URL="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/appcast.xml"
+
+      - name: Check and smoke-test
+        working-directory: apple
+        run: |
+          APP="DerivedData/Build/Products/Release/Knife Terminal.app"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" -c "Print :CFBundleVersion" -c "Print :SUFeedURL" "$APP/Contents/Info.plist"
+          lipo -archs "$APP/Contents/MacOS/Knife Terminal"
+          "$APP/Contents/MacOS/Knife Terminal" & PID=$!
+          sleep 15
+          kill -0 $PID || { echo "app exited within 15s of launch"; exit 1; }
+          kill $PID
+          ditto -c -k --keepParent "$APP" "$ZIP"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Knife-Terminal-${{ env.V }}-eddie
+          path: ${{ env.ZIP }}
+
+      - name: Publish
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "$TAG already released; built only"
+            exit 0
+          fi
+          gh release create "$TAG" "$ZIP" --target "$GITHUB_SHA" \
+            --title "Knife Terminal $V (Eddie's build)" --notes-file .github/fork-release-notes.md

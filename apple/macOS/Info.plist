@@ -81,7 +81,7 @@
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/cheewee2000/knife-terminal/main/appcast.xml</string>
+	<string>$(KNIFE_FEED_URL)</string>
 	<key>SUPublicEDKey</key>
 	<string>IsZ2LtddRqNHFHsp6U40Gw/A6sWIJO4m5xJYr1r4qic=</string>
 </dict>
