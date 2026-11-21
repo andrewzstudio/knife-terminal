@@ -1,6 +1,7 @@
 # Builds the Mac app on a GitHub runner and posts it as a release of this fork.
 # The build is ad-hoc signed (no Apple account on the runner): not notarized, no
 # iCloud entitlement. release.sh is still the notarized CW&T release.
+# Its update feed is appcast-eddie.xml, so a CW&T release never replaces it.
 # Every push that touches the app is built, tested and smoke-tested. A release is
 # published from main, from a manual run, or from a commit whose message contains
 # [release], and only for a version in apple/project.yml that has no release yet.
