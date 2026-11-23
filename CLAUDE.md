@@ -23,6 +23,7 @@ Xcode 27 is installed on this Mac (since 2026-11-21), so build and install local
    - Tabs and sessions restore themselves after the restart.
    - If the new app doesn't stay open, the script puts the backup back and reopens it.
    - Never launch a built app's binary directly to test it: it shares Knife's settings and sessions.
+   - On 2026-11-21 the 1.4.35 install removed `/Applications/Knife Terminal.app` and never put a new one in, so Knife ran from `_claude_build/` until 2026-11-23. Two causes: `pgrep -x "Knife Terminal"` doesn't see the running app here, and the script deleted the old app before checking the new one. Both are fixed in the script (it matches the executable path and verifies the new app first). Check `/Applications/Knife Terminal.app` exists after any install.
 5. Commit and `git push origin andrew`. Andrew doesn't need the GitHub build: leave `[release]` out of the message unless he asks for a published release. With `[release]`, `.github/workflows/fork-release.yml` builds and publishes `v<version>-andrew` (watch with `gh run watch <id> -R andrewzstudio/knife-terminal --exit-status`), and `scripts/install-release.sh v<version>-andrew` installs that instead.
 6. Batch requests into one build where you can, but don't restart a running build for a new request without asking.
 7. To roll back, quit Knife, unzip a backup from `~/.knife/backup/` into `/Applications`, and run `xattr -dr com.apple.quarantine`.

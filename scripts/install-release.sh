@@ -16,6 +16,8 @@ GH="${GH:-$HOME/.local/bin/gh}"
 WORK="$HOME/.knife/backup/releases/$TAG"
 APP="/Applications/Knife Terminal.app"
 LOG="$HOME/.knife/backup/install.log"
+# Match on the executable path: `pgrep -x "Knife Terminal"` does not see the running app on this Mac.
+knife_running() { pgrep -f "Knife Terminal.app/Contents/MacOS/Knife Terminal" >/dev/null; }
 
 if [ "${KNIFE_INSTALL_DETACHED:-}" != 1 ]; then
   rm -rf "$WORK" && mkdir -p "$WORK"
@@ -29,9 +31,14 @@ if [ "${KNIFE_INSTALL_DETACHED:-}" != 1 ]; then
   codesign --verify --deep --strict "$NEW"
   echo "verified $(defaults read "$NEW/Contents/Info" CFBundleShortVersionString)"
   OLD_V=$(defaults read "$APP/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo none)
-  BACKUP="$HOME/.knife/backup/Knife-Terminal-$OLD_V-before-$TAG.zip"
-  ditto -c -k --keepParent "$APP" "$BACKUP"
-  echo "backed up current $OLD_V to ~/.knife/backup/Knife-Terminal-$OLD_V-before-$TAG.zip"
+  BACKUP=""
+  if [ -d "$APP" ]; then
+    BACKUP="$HOME/.knife/backup/Knife-Terminal-$OLD_V-before-$TAG.zip"
+    ditto -c -k --keepParent "$APP" "$BACKUP"
+    echo "backed up current $OLD_V to ~/.knife/backup/Knife-Terminal-$OLD_V-before-$TAG.zip"
+  else
+    echo "no app in /Applications yet; nothing to back up"
+  fi
   KNIFE_INSTALL_DETACHED=1 KNIFE_INSTALL_BACKUP="$BACKUP" nohup python3 -c 'import os,sys; os.setsid(); os.execv("/bin/bash", ["/bin/bash"] + sys.argv[1:])' \
     "$0" "$TAG" >/dev/null 2>&1 &
   echo "Knife will quit in ~8 s, be replaced, and reopen."
@@ -43,14 +50,20 @@ echo "== $(date) installing $TAG"
 NEW="$WORK/unzipped/Knife Terminal.app"
 sleep 8
 osascript -e 'tell application "Knife Terminal" to quit' || true
-for _ in $(seq 1 60); do pgrep -x "Knife Terminal" >/dev/null || break; sleep 1; done
-if pgrep -x "Knife Terminal" >/dev/null; then echo "Knife did not quit; nothing changed"; exit 1; fi
+for _ in $(seq 1 60); do knife_running || break; sleep 1; done
+if knife_running; then echo "Knife did not quit; nothing changed"; exit 1; fi
+# Never remove the current app until the new one is confirmed to be there.
+if [ ! -x "$NEW/Contents/MacOS/Knife Terminal" ]; then
+  echo "new app missing at $NEW; nothing changed"
+  open "$APP" 2>/dev/null || true
+  exit 1
+fi
 rm -rf "$APP" && ditto "$NEW" "$APP" && xattr -dr com.apple.quarantine "$APP"
 echo "installed $(defaults read "$APP/Contents/Info" CFBundleShortVersionString)"
 open "$APP"
 # A build that can't launch (a missing framework, say) dies within seconds: put the old app back.
 sleep 12
-if ! pgrep -x "Knife Terminal" >/dev/null && [ -n "${KNIFE_INSTALL_BACKUP:-}" ]; then
+if ! knife_running && [ -n "${KNIFE_INSTALL_BACKUP:-}" ]; then
   echo "the new build didn't stay open; restoring $KNIFE_INSTALL_BACKUP"
   rm -rf "$APP" && ditto -x -k "$KNIFE_INSTALL_BACKUP" /Applications && xattr -dr com.apple.quarantine "$APP"
   open "$APP"
